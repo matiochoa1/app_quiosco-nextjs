@@ -2,9 +2,50 @@
 
 import { useStore } from "@/src/store";
 import ProductDetails from "./ProductDetails";
+import { useMemo } from "react";
+import { formatCurrency } from "@/src/utils";
+import { createOrder } from "@/actions/create-order-action";
+import { OrderSchema } from "@/src/schema";
+import { toast } from "react-toastify";
 
 export default function OrderSummary() {
 	const order = useStore((state) => state.order);
+	const clearOrder = useStore((state) => state.clearOrder);
+
+	const total = useMemo(
+		() => order.reduce((total, item) => total + item.quantity * item.price, 0),
+		[order]
+	);
+
+	const handleCreateOrder = async (formData: FormData) => {
+		const data = {
+			name: formData.get("name"),
+			phone: formData.get("phone"),
+			total,
+			order,
+		};
+
+		const result = OrderSchema.safeParse(data);
+
+		if (!result.success) {
+			result.error.issues.forEach((issue) => {
+				toast.error(issue.message);
+			});
+
+			return; // Doesn't get to the server unless the client validation passes
+		}
+
+		const response = await createOrder(data);
+		if (response?.errors) {
+			response.errors.forEach((issue) => {
+				toast.error(issue.message);
+			});
+			return;
+		}
+
+		toast.success("Pedido Realizado Correctamente");
+		clearOrder();
+	};
 
 	return (
 		<>
@@ -12,12 +53,41 @@ export default function OrderSummary() {
 				<h1 className="text-4xl font-black text-center">Mi Pedido</h1>
 
 				{order.length === 0 ? (
-					<p className="text-center my-10">El carrito esta vacio</p>
+					<p className="text-center my-10">El pedido esta vacio</p>
 				) : (
 					<div className="mt-5">
 						{order.map((item) => (
 							<ProductDetails key={item.id} item={item} />
 						))}
+
+						<p className="text-2xl mt-20 text-center">
+							Total a pagar: {""}
+							<span className="font-bold">{formatCurrency(total)}</span>
+						</p>
+
+						<form action={handleCreateOrder} className="w-full mt-10 space-y-5">
+							<input
+								type="text"
+								placeholder="Tu nombre"
+								className="bg-white border border-gray-100 p-2 w-full"
+								name="name"
+							/>
+
+							<input
+								type="text"
+								placeholder="Tu número de teléfono"
+								className="bg-white border border-gray-100 p-2 w-full"
+								name="phone"
+								pattern="^\d+$" // Solo permite números
+								title="Deben ser numeros"
+							/>
+
+							<input
+								type="submit"
+								className="py-2 rounded uppercase text-white bg-black w-full text-center cursor-pointer font-bold hover:bg-slate-900 shadow-lg"
+								value="Confirmar Pedido"
+							/>
+						</form>
 					</div>
 				)}
 			</aside>
