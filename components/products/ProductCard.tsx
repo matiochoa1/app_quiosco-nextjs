@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { formatCurrency } from "@/src/utils";
+import { formatCurrency, getImagePath } from "@/src/utils";
 import { Product } from "@prisma/client";
 import { motion } from "framer-motion";
 import AddProductButton from "./AddProductButton";
@@ -10,6 +10,8 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
+	const imagePath = getImagePath(product.image);
+
 	return (
 		<>
 			<motion.div
@@ -18,7 +20,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 				transition={{ type: "spring", stiffness: 200, damping: 10 }}
 				className="border border-amber-200 bg-white cursor-pointer shadow-md rounded-lg overflow-hidden">
 				<Image
-					src={`/products/${product.image}.jpg`}
+					src={imagePath}
 					alt={`Imagen de ${product.name}`}
 					width={500}
 					height={500}
