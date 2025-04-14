@@ -28,14 +28,15 @@ export type ProductsWithCategory = Awaited<ReturnType<typeof getProducts>>;
 export default async function ProductsPage({
 	searchParams,
 }: {
-	searchParams: { page: string };
+	searchParams: Promise<{ page?: string }>;
 }) {
-	const page = +searchParams.page || 1;
+	const { page } = await searchParams;
+	const currentPage = +(page || 1);
 	const pageSize = 10;
 
-	if (page < 0) redirect("/admin/products");
+	if (currentPage < 0) redirect("/admin/products");
 
-	const productsData = getProducts(page, pageSize);
+	const productsData = getProducts(currentPage, pageSize);
 	const totalProductsData = productCount(); // this will return the exact number of products we have that will help us with the pagination
 
 	const [products, totalProducts] = await Promise.all([
@@ -44,7 +45,7 @@ export default async function ProductsPage({
 	]);
 	const totalPages = Math.ceil(totalProducts / pageSize);
 
-	if (page > totalPages) redirect("/admin/products");
+	if (currentPage > totalPages) redirect("/admin/products");
 
 	return (
 		<>
@@ -62,7 +63,7 @@ export default async function ProductsPage({
 
 			<ProductTable products={products} />
 
-			<ProductsPagination page={page} totalPages={totalPages} />
+			<ProductsPagination page={currentPage} totalPages={totalPages} />
 		</>
 	);
 }
